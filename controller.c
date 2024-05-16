@@ -2,14 +2,20 @@
 #include <xgfx/drawing.h>
 #include "lerp.h"
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 Point finalPath[1000];
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Missing resolution argument\n");
+        return 1;
+    }
+    float resolution = strtof(argv[1], NULL);
     initWindow(640, 480, "Etch-a-sketch Controller");
     int wholeT = 0;
     float partT = 0;
+    printf("0 0\n");
     while(1) {
         Event event;
         while (checkWindowEvent(&event)) {
@@ -43,7 +49,7 @@ int main() {
         finalPath[1].x = a.x;
         finalPath[1].y = a.y;
         pointIndex = 2;
-        for (float t = 0.1; t < 1.0001; t += 0.1) {
+        for (float t = resolution; t < 1.0001; t += resolution) {
             Point new = quadBezier(a, b, c, t);
             line(old.x, old.y, new.x, old.y, 0xff0000ff);
             line(new.x, old.y, new.x, new.y, 0xff0000ff);
@@ -51,7 +57,7 @@ int main() {
             finalPath[pointIndex] = new;
             pointIndex++;
         }
-        for (float t = 0.1; t < 1.0001; t += 0.1) {
+        for (float t = resolution; t < 1.0001; t += resolution) {
             Point new = quadBezier(c, d, a, t);
             line(old.x, old.y, new.x, old.y, 0xff0000ff);
             line(new.x, old.y, new.x, new.y, 0xff0000ff);
@@ -65,6 +71,7 @@ int main() {
             .x = finalPath[wholeT + 1].x,
             .y = finalPath[wholeT].y
         };
+        partT += 0.05;
         Point current;
         if (partT < 0.5) {
             current = lerp(finalPath[wholeT], partPoint, partT*2);
@@ -73,11 +80,12 @@ int main() {
             current = lerp(partPoint, finalPath[wholeT + 1], partT*2-1);
         }
         circle(current.x, current.y, 5, 0xffffffff);
-        partT += 0.01;
         if (partT >= 1) {
             partT = 0;
+            updateWindow(); // hacky
             wholeT++;
-            printf("move to %d, %d\n", finalPath[wholeT].x, finalPath[wholeT].y);
+            //getchar();
+            printf("%d %d\n", finalPath[wholeT].x, finalPath[wholeT].y);
         }
         if (wholeT >= pointIndex) {
             wholeT = 0;
