@@ -1,21 +1,37 @@
 #include <xgfx/window.h>
 #include <xgfx/drawing.h>
 #include "lerp.h"
+#include "serial.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 Point finalPath[1000];
+char readBuf[100];
 
 int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr, "Missing resolution argument\n");
         return 1;
     }
+    int serial = open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_SYNC);
+    if (serial < 0) {
+        fprintf(stderr, "Error connecting to serial port: %s\n", strerror(errno));
+        return 1;
+    }
+    set_interface_attribs(serial, B9600, 0);
+    set_blocking(serial, 0);
+    sleep(2);
+
     float resolution = strtof(argv[1], NULL);
     initWindow(640, 480, "Etch-a-sketch Controller");
     int wholeT = 0;
     float partT = 0;
-    printf("0 0\n");
+
     while(1) {
         Event event;
         while (checkWindowEvent(&event)) {
@@ -71,7 +87,6 @@ int main(int argc, char** argv) {
             .x = finalPath[wholeT + 1].x,
             .y = finalPath[wholeT].y
         };
-        partT += 0.05;
         Point current;
         if (partT < 0.5) {
             current = lerp(finalPath[wholeT], partPoint, partT*2);
@@ -80,12 +95,15 @@ int main(int argc, char** argv) {
             current = lerp(partPoint, finalPath[wholeT + 1], partT*2-1);
         }
         circle(current.x, current.y, 5, 0xffffffff);
+        if (partT == 0) {
+            printf("%d %d\n", finalPath[wholeT].x * 10, finalPath[wholeT].y * 10);
+            dprintf(serial, "%d %d\n", finalPath[wholeT].x * 10, finalPath[wholeT].y * 10);
+            getchar();
+        }
+        partT += 0.05;
         if (partT >= 1) {
             partT = 0;
-            updateWindow(); // hacky
             wholeT++;
-            //getchar();
-            printf("%d %d\n", finalPath[wholeT].x, finalPath[wholeT].y);
         }
         if (wholeT >= pointIndex) {
             wholeT = 0;
