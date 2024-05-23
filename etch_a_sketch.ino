@@ -35,16 +35,23 @@ void loop() {
         char* pEnd;
         newPoint.x = strtol(pointBuffer, &pEnd, 10);
         newPoint.y = strtol(pEnd, NULL, 10);
-        Serial.print("stepping ");
-        Serial.print(newPoint.x);
-        Serial.print(" ");
-        Serial.println(newPoint.y);
-        stepperX.step(-(newPoint.x - head.x));
-        head.x = newPoint.x;
-        stepperY.step(-(newPoint.y - head.y));
-        head.y = newPoint.y;
+        if (newPoint.x < 0 || newPoint.y < 0) {
+          Serial.println("invalid");
+        }
+        else {
+          Serial.print("stepping ");
+          Serial.print(newPoint.x);
+          Serial.print(" ");
+          Serial.println(newPoint.y);
+          stepperX.step(-(newPoint.x - head.x));
+          head.x = newPoint.x;
+          stepperY.step(-(newPoint.y - head.y));
+          head.y = newPoint.y;
+        }
         index = 0;
       }
-      index++;
+      else {
+        index++;
+      }
     }
 }

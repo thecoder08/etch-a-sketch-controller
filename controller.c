@@ -11,14 +11,13 @@
 #include <string.h>
 
 Point finalPath[1000];
-char readBuf[100];
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        fprintf(stderr, "Missing resolution argument\n");
+    if (argc < 3) {
+        fprintf(stderr, "You must specify resolution and serial port\n");
         return 1;
     }
-    int serial = open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_SYNC);
+    int serial = open(argv[2], O_RDWR | O_NOCTTY | O_SYNC);
     if (serial < 0) {
         fprintf(stderr, "Error connecting to serial port: %s\n", strerror(errno));
         return 1;
@@ -96,8 +95,10 @@ int main(int argc, char** argv) {
         }
         circle(current.x, current.y, 5, 0xffffffff);
         if (partT == 0) {
-            printf("%d %d\n", finalPath[wholeT].x * 10, finalPath[wholeT].y * 10);
-            dprintf(serial, "%d %d\n", finalPath[wholeT].x * 10, finalPath[wholeT].y * 10);
+            char pointbuf[100];
+            int length = sprintf(pointbuf, "%d %d\n", finalPath[wholeT].x * 10, finalPath[wholeT].y * 10);
+            puts(pointbuf);
+            write(serial, pointbuf, length);
             getchar();
         }
         partT += 0.05;
